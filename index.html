@@ -337,7 +337,7 @@
             //otherTurn and thisTurn will always be opposites or both false
             if (otherTurn == true)
                 $("#moveTracker").text(otherColor + "'s turn");
-            else 
+            if (thisTurn == true)
                 $("#moveTracker").text(thisColor + "'s turn");
         }
 
@@ -354,6 +354,12 @@
                     }
                 }
             }
+            $("#moveTracker").html(
+              "game over!<br/>" + 
+              "scores:<br/>" + 
+              `white: ${whiteCount}<br/>` + 
+              `black: ${blackCount}`
+            );
             console.log("game over!");
             console.log("scores:");
             console.log(`\twhite: ${whiteCount}`);
