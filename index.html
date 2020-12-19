@@ -15,6 +15,10 @@
         background-color: #25ad2b;
     }
 
+    #moveTracker {
+        text-transform: capitalize;
+    }
+
     table {
         width: 100%;
         height: 100%;
@@ -109,8 +113,8 @@
         </table>
     </div>
     <br>
-    <div>
-        haha
+    <div id="moveTracker">
+        Black's turn
     </div>
     <script>
         //game logic will be handled here
@@ -331,14 +335,20 @@
 
             let otherColor = oppositeColor(pair);
             let otherTurn = turn(otherColor);
-
+            let thisTurn = false;
             //if no moves are found, check this color again
             if (otherTurn == false)
-                otherTurn = turn(thisColor);
+                thisTurn = turn(thisColor);
             
             //if no moves are found for either player, then go to endgame
-            if (otherTurn == false)
+            if (otherTurn == false && thisTurn == false)
                 endgame();
+
+            //otherTurn and thisTurn will always be opposites or both false
+            if (otherTurn == true)
+                $("#moveTracker").text(otherColor + "'s turn");
+            else 
+                $("#moveTracker").text(thisColor + "'s turn");
         }
 
         function endgame() {
