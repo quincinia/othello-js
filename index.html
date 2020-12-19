@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<!--
+    Pretty much redoing everything because the old one was kinda fucked
+
+    Probably just rewrite everything in js instead of going through the cpp version
+-->
+<style>
+    #board {
+        padding: 0;
+        border: 10px ridge grey;
+        height: 90vmin;
+        width: 90vmin;
+        margin-left: auto;
+        margin-right: auto;
+        background-color: #25ad2b;
+    }
+
+    table {
+        width: 100%;
+        height: 100%;
+        background-color: #225413;
+    }
+
+    td {
+        background-color: #25ad2b;
+        position: relative;
+        vertical-align: middle;
+    }
+
+    td::before {
+        margin-top: -50%;
+        margin-left: -50%;
+        border-radius: 50%;
+        border: 2px solid #333;
+        /*background-color: white;*/
+        content: "";
+        display: none;
+        position: absolute;
+    }
+
+    .white::before {
+        display: block;
+        width: 80%;
+        height: 80%;
+        top: 57.5%;
+        left: 57.5%;
+        background-color: white;
+    }
+
+    .black::before {
+        display: block;
+        width: 80%;
+        height: 80%;
+        top: 57.5%;
+        left: 57.5%;
+        background-color: black;
+    }
+
+    .valid::before {
+        margin: 0;
+        display: block;
+        width: 30%;
+        height: 30%;
+        top: 35%;
+        left: 35%;
+        border-style: none;
+        background-color: #13ff03;
+    }
+</style>
+<html lang="en">
+<head>
+    <title>Othello Game by Jacob</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="board">
+        <table id="grid" border="1" cellpadding="0">
+            <script src="jquery.js"></script>
+            <script>
+
+                //no game logic here, only setting up the board
+                for (let i = 0; i < 8; i++) {
+                    $("#grid").append("<tr></tr>");
+                    //creates the rows
+                }
+                for (let j = 0; j < 8; j++) {
+                    $("#grid tr").append("<td></td>");
+                    //creates the columns
+                }
+                //variables section
+                //$("td").data({ pairs: [] });
+
+                let row = ["0", "1", "2", "3", "4", "5", "6", "7"];
+                let col = ["0", "1", "2", "3", "4", "5", "6", "7"];
+                let cell = document.getElementsByTagName("td");
+                for (let k = 0; k < 64; k++) {
+                    cell[k].innerHTML = Math.floor(k / 8) + ", " + k % 8;
+                    cell[k].setAttribute("data-row", row[Math.floor(k / 8)]);
+                    cell[k].setAttribute("data-col", col[k % 8]);
+                    //setting data attributes for easy access 
+                    cell[k].id = row[Math.floor(k / 8)] + col[k % 8];
+                    $("#" + cell[k].id).data({ pairs: [] });
+                    //sets id/index for each cell
+
+                }
+            </script>
+        </table>
+    </div>
+    <br>
+    <div>
+        haha
+    </div>
+    <script>
+        //game logic will be handled here
+        /*
+        $("td").mousedown(function () {
+            $(this).css("background-color", "blue");
+        });
+        */
+
+        
+        //returns the opposite color of the cell (if applicable)
+        function oppositeColor(cellID) {
+            if ($("#" + cellID).hasClass("black")) {
+                return "white";
+            }
+            if ($("#" + cellID).hasClass("white")) {
+                return "black";
+            }
+        }
+
+        //flips from white to black and vice versa
+        function flip(cellID) {
+            console.log(`cell ${cellID} has class:\nblack: ` + $("#" + cellID).hasClass("black").toString() + `\nwhite: ` + $("#" + cellID).hasClass("white").toString());
+            
+            if ($("#" + cellID).hasClass("black")) {
+                $("#" + cellID).removeClass("black");
+                $("#" + cellID).addClass("white");
+            } else if ($("#" + cellID).hasClass("white")) {
+                $("#" + cellID).removeClass("white");
+                $("#" + cellID).addClass("black");
+            }
+        }
+
+        //(O)ut (O)f (B)ounds check
+        function oob(x, y) {
+            //(x, y) represent the coordinates of the cell
+            if (x > 7 || y > 7 || x < 0 || y < 0) {
+                return true;
+            }
+            return false;
+        }
+
+        //converts a (num)eric ID into a string
+        //does not prepend hash symbol(#)
+        function numID(x, y) {
+            return (row[x] + col[y]);
+        }
+
+        //traces along <i, j>; stops when it hits an empty space, matching color, or a valid space
+        //used to confirm if if a move is valid (see "scan" function below)
+        function trace(i, j, ID) {
+            console.log(`cell: ${ID}, valid move in direction <${i}, ${j}>`);
+            let traceRow = Number(document.getElementById(ID).getAttribute("data-row")) + i;
+            let traceCol = Number(document.getElementById(ID).getAttribute("data-col")) + j;
+            let traceCell;
+            do {
+                traceRow += i;
+                traceCol += j;
+                if (oob(traceRow, traceCol)) { return false; }
+                traceCell = numID(traceRow, traceCol);
+            } while ($("#" + traceCell).hasClass(oppositeColor(ID)));
+
+            if (!($("#" + traceCell).hasClass(document.getElementById(ID).className))) {
+                //if the first non-opposite cell is not the same color as the cell that was inputted
+                //might have to store the color value as another data-* attribute
+                if (!($("#" + traceCell).hasClass("valid"))) {
+                    $("#" + traceCell).addClass("valid");
+                    //marks the cell as a valid move if it isn't already
+
+                    $("#" + traceCell).one("click", handleCell);
+                }
+                $("#" + traceCell).data().pairs.push(ID);
+                console.log(`added ${ID} as a pair to ${traceCell}`);
+                console.log("\t" + $("#" + traceCell).data().pairs);
+                //adds the calling cell to the list of pairs
+
+                return true;
+                //if the cell is marked as valid, then the move is legal
+            }
+            return false;
+        }
+
+
+        //looks at all surrounding cells to check if a valid move COULD be made
+        //will call another function in order to confirm if that move is valid
+        //will return whether that cell can make any valid moves
+        function scan(ID) { //ID of the cell
+            console.log("scanning around " + ID);
+            let valid_move = false;
+            let scanRow = Number(document.getElementById(ID).getAttribute("data-row")) - 1;
+            let endRow = scanRow + 3;
+            let scanCol = Number(document.getElementById(ID).getAttribute("data-col")) - 1;
+            let endCol = scanCol + 3;
+            //scanning will start from the top left corner and end at the bottom right
+
+            for (; scanRow < endRow; scanRow++) {
+                for (let j = scanCol; j < endCol; j++) { //set j = scanCol so that scanCol is "reset" every time the outer loop iterates
+                    console.log(`checking cell (${scanRow}, ${j})`);
+                    if (oob(scanRow, j)) { continue; }
+
+                    let scanCell = numID(scanRow, j);
+                    //there is a possible move if one of the cells has the opposite color
+                    if ($("#" + scanCell).hasClass(oppositeColor(ID))) {
+                        valid_move = trace(scanRow - $("#" + ID).attr("data-row"), j - $("#" + ID).attr("data-col"), ID); //a number minus a string should return a number, but this might need more testing
+                        //the trace function will confirm if the move is valid
+                    } else {
+                        continue;
+                    }
+                }
+            }
+            return valid_move;
+        }
+
+        //will flip all pieces between a valid cell and all of its pair cells
+        //does not change any of the cell classes
+        function reversi(validCell) {
+            let size = $("#" + validCell).data().pairs.length;
+
+            console.log(`cell ${validCell} has ${size} pairs`);
+            console.log("\t" + $("#" + validCell).data().pairs);
+
+    
+            let vectorI = 0, vectorJ = 0;
+            let cellRow = Number($("#" + validCell).attr("data-row"));
+            let cellCol = Number($("#" + validCell).attr("data-col"));
+            let travelRow, travelCol;
+            let pairID;
+            for (let i = 0; i < size; i++) {
+                travelRow = cellRow;
+                travelCol = cellCol;
+                pairID = $("#" + validCell).data().pairs[i];
+                vectorI = $("#" + pairID).attr("data-row") - cellRow;
+                //this should come out to be an integer
+                if (vectorI !== 0) {
+                    vectorI = Math.floor(vectorI / Math.abs(vectorI));
+                }
+                vectorJ = $("#" + pairID).attr("data-col") - cellCol;
+                if (vectorJ !== 0) {
+                    vectorJ = Math.floor(vectorJ / Math.abs(vectorJ));
+                }
+                //the two if-statements will create the unit vector
+
+                console.log(`starting from: <${travelRow}, ${travelCol}>`);
+                console.log(`travel vector: <${vectorI}, ${vectorJ}>`);
+                while ($("#" + numID(travelRow + vectorI, travelCol + vectorJ)).attr("id") !== pairID) {
+                    travelRow += vectorI;
+                    travelCol += vectorJ;
+                    console.log(`visiting: ${travelRow}, ${travelCol}`);
+                    flip(numID(travelRow, travelCol));
+                }
+            }
+            $("#" + validCell).data().pairs = [];
+        }
+    </script>
+    <script>
+        //main gameplay loop functions
+
+        //determines whether that color can make any valid moves
+        //if there are valid moves, then they will be marked
+        function turn(color) {
+            console.log(color + "'s turn");
+            let valid = false;
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if ($("#" + numID(i, j)).hasClass(color)) {
+                        if (scan(numID(i, j))) {
+                            valid = true;
+                        }
+                    }
+                }
+            }
+            return valid;
+        }
+
+        //places a piece at a valid position on the board
+        //not sure how to make this function required for the gameplay loop to continue (turn will not end until a piece is clicked)
+        function place(color) {
+            console.log("placing color: " + color);
+            $(".valid").on("click", function () {
+                let thisID = $(this).attr("id");
+                $(this).removeClass();
+                reversi(thisID);
+                $(this).addClass(color);
+            });
+        }
+
+        //clears all "valid" markers in preparation for the other player's turn
+        //even though the "valid" class gets removed, the "place" function will still be in effect
+        async function clearPairs() {
+            console.log("clearing pairs...");
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if ($("#" + numID(i, j)).hasClass("valid")) {
+                        $("#" + numID(i, j)).off();
+                        $("#" + numID(i, j)).removeClass();
+                        $("#" + numID(i, j)).data().pairs = [];
+                        console.log(numID(i, j) + " pairs:");
+                        console.log("\t" + $("#" + numID(i, j)).data().pairs);
+                    }
+                }
+            }
+            return "pairs cleared";
+        }
+    </script>
+    <script>
+        //handling function
+        async function handleCell() {
+            let thisID = $(this).attr("id");
+            console.log("clicked " + thisID);
+            let pair = $(this).data().pairs[0];
+            let thisColor = $("#" + pair).attr("class");
+            $(this).removeClass();
+            $(this).addClass(thisColor);
+            reversi(thisID);
+            
+            let cleared = await clearPairs();
+            console.log(cleared);
+
+            let otherColor = oppositeColor(pair);
+            let otherTurn = turn(otherColor);
+
+            //if no moves are found, check this color again
+            if (otherTurn == false)
+                otherTurn = turn(thisColor);
+            
+            //if no moves are found for either player, then go to endgame
+            if (otherTurn == false)
+                endgame();
+        }
+
+        function endgame() {
+            //tally up scores
+            let whiteCount = 0, blackCount = 0;
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if ($("#" + numID(i, j)).hasClass("white")) {
+                        whiteCount++;
+                    }
+                    if ($("#" + numID(i, j)).hasClass("black")) {
+                        blackCount++;
+                    }
+                }
+            }
+            console.log("game over!");
+            console.log("scores:");
+            console.log(`\twhite: ${whiteCount}`);
+            console.log(`\tblack: ${blackCount}`);
+        }
+
+        $(function () {
+            
+            $("#33").addClass("white");
+            $("#44").addClass("white");
+            $("#34").addClass("black");
+            $("#43").addClass("black");
+            console.log("base pieces added");
+
+            let whiteTurn = true;
+            let blackTurn = true;
+            //while (whiteTurn || blackTurn) {
+            console.log("game loop started");
+            turn("black");
+            //$(".valid").on("click", handlecell);
+            
+            //while both players still have valid moves, the game will go on
+            //display some text that says whose move it is
+            /*
+            whiteTurn = turn("white");
+            
+            if (whiteTurn) {
+                place("white");
+                clearPairs();
+            }
+            blackTurn = turn("black");
+            if (blackTurn) {
+                place("black");
+                clearPairs();
+            }
+            */
+            //}
+            //display text that says game is over
+
+            
+
+            //once scores are calculated, display them and end game
+
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+(change this to md file later?)
+
+each cell has an onclick action that does nothing except if the cell is marked as valid
+
+if the cell is valid:
+1. color it the same color as one of its pairs
+2. flip everything between the cell and each of its pairs (same as usual)
+3. wipe all pairs from board
+4. find valid moves of opposite color
+    a. if no moves are found, look for moves of the same color
+    b. if no moves for either color are found, go to endgame
+5. if moves are found, mark valid cells
+
+
+
